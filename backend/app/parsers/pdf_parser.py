@@ -9,27 +9,33 @@ import io
 
 import pdfplumber
 
+from .section_parser import split_sections
+from .text_cleaner import clean_text
+from .contact_extractor import extract_contact
+from app.models.schemas import ParsedResume
 
-def extract_text(file_bytes: bytes) -> dict:
-    """Extract raw text and basic layout info from a PDF resume.
 
-    Args:
-        file_bytes: the raw bytes of an uploaded PDF.
-
-    Returns:
-        A dict with:
-          - raw_text:   all pages joined together
-          - pages:      list of per-page text (preserves page boundaries)
-          - page_count: number of pages
-    """
+def extract_text(file_bytes: bytes) -> ParsedResume:
     pages: list[str] = []
+
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
         for page in pdf.pages:
             pages.append(page.extract_text() or "")
 
     raw_text = "\n\n".join(pages).strip()
-    return {
-        "raw_text": raw_text,
-        "pages": pages,
-        "page_count": len(pages),
-    }
+    cleaned_text = clean_text(raw_text)
+
+    sections = split_sections(cleaned_text)
+
+    contact = extract_contact(
+        header=sections.get("header", ""),
+        full_text=cleaned_text,
+    )
+
+    return ParsedResume(
+        contact=contact,
+        sections=sections,
+        raw_text=raw_text,
+        cleaned_text=cleaned_text,
+        page_count=len(pages),
+    )

@@ -28,7 +28,10 @@ async def analyze(resume: UploadFile = File(...)) -> dict:
 
     return {
         "filename": filename,
-        "page_count": result["page_count"],
-        "char_count": len(result["raw_text"]),
-        "raw_text": result["raw_text"],
+        "page_count": result.page_count,
+        "char_count": len(result.cleaned_text),
+        "contact": result.contact,
+        "sections": result.sections,
+        "raw_text": result.raw_text,
+        "cleaned_text": result.cleaned_text,
     }
